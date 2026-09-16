@@ -51,6 +51,26 @@ ordinary control flow (a gate: no cookie, no dashboard), not an error.
 The page is a Client Component, which is the common case for an interactive dashboard page, so the
 page-level opt-out is not available at all.
 
+## It also hides real findings on the same request
+
+Replace `app/dashboard/page.tsx` with a Server Component that does blocking IO:
+
+```tsx
+import { connection } from "next/server"
+
+export default async function DashboardPage() {
+  await connection()
+  return <p>dashboard</p>
+}
+```
+
+Then request `/dashboard` twice each way:
+
+| Request | Logged |
+| --- | --- |
+| `curl -H 'Cookie: seeded=1' .../dashboard` (redirect does **not** fire) | `Next.js encountered uncached data …` → `blocking-prerender-dynamic` — correct |
+| `curl .../dashboard` (redirect fires) | only `Could not validate \`instant\` …`; the real finding is gone |
+
 ## Files
 
 - `next.config.mjs` — `cacheComponents: true`, `partialPrefetching: true`
